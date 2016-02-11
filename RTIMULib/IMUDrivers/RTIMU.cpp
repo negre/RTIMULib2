@@ -148,6 +148,8 @@ RTIMU::RTIMU(RTIMUSettings *settings)
         m_runtimeMagCalMin[i] = 1000;
     }
 
+    m_compassCalVariableOffset = RTVector3(0,0,0);
+      
     switch (m_settings->m_fusionType) {
     case RTFUSION_TYPE_KALMANSTATE4:
         m_fusion = new RTFusionKalman4();
@@ -372,14 +374,15 @@ RTVector3 RTIMU::CalibratedAccel()
 void RTIMU::updateFusion()
 {
     RTIMU_DATA imuData = m_imuData;
-
+    //m_rawImuData = imuData;
+    
     imuData.accel = CalibratedAccel();
     
         // apply ellipsoid parameters
     if (getCompassCalibrationValid() || getRuntimeCompassCalibrationValid()) {
-        imuData.compass.setX((imuData.compass.x() - m_compassCalOffset[0]) * m_compassCalScale[0]);
-        imuData.compass.setY((imuData.compass.y() - m_compassCalOffset[1]) * m_compassCalScale[1]);
-        imuData.compass.setZ((imuData.compass.z() - m_compassCalOffset[2]) * m_compassCalScale[2]);
+      imuData.compass.setX((imuData.compass.x() - m_compassCalOffset[0] - m_compassCalVariableOffset.x()) * m_compassCalScale[0]);
+        imuData.compass.setY((imuData.compass.y() - m_compassCalOffset[1] - m_compassCalVariableOffset.y()) * m_compassCalScale[1]);
+        imuData.compass.setZ((imuData.compass.z() - m_compassCalOffset[2] - m_compassCalVariableOffset.z()) * m_compassCalScale[2]);
     }
     if (m_settings->m_compassCalEllipsoidValid) {
         RTVector3 ev = imuData.compass;
@@ -397,6 +400,10 @@ void RTIMU::updateFusion()
                              ev.y() * m_settings->m_compassCalEllipsoidCorr[2][1] +
                              ev.z() * m_settings->m_compassCalEllipsoidCorr[2][2]);
     }
+    m_compassAverage.setX(imuData.compass.x() * COMPASS_ALPHA + m_compassAverage.x() * (1.0 - COMPASS_ALPHA));
+    m_compassAverage.setY(imuData.compass.y() * COMPASS_ALPHA + m_compassAverage.y() * (1.0 - COMPASS_ALPHA));
+    m_compassAverage.setZ(imuData.compass.z() * COMPASS_ALPHA + m_compassAverage.z() * (1.0 - COMPASS_ALPHA));
+    imuData.compass = m_compassAverage;
 
     if ((m_settings->m_axisRotation > 0) && (m_settings->m_axisRotation < RTIMU_AXIS_ROTATION_COUNT)) {
         // need to do an axis rotation

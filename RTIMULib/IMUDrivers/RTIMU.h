@@ -114,6 +114,8 @@ public:
 
     const RTIMU_DATA& getIMUData() { return m_imuData; }
 
+    //const RTIMU_DATA& getRawIMUData() { return m_rawImuData; }
+
     //  setExtIMUData allows data from some external IMU to be injected to the fusion algorithm
 
     void setExtIMUData(RTFLOAT gx, RTFLOAT gy, RTFLOAT gz, RTFLOAT ax, RTFLOAT ay, RTFLOAT az,
@@ -160,6 +162,10 @@ public:
 
     RTVector3 getAccelResiduals() { return m_fusion->getAccelResiduals(CalibratedAccel()); }
 
+    void setCompassCalVariableOffset(const RTVector3& vec) { m_compassCalVariableOffset=vec; }
+
+    RTVector3 getCompassCalOffset() const { return RTVector3(m_compassCalOffset[0], m_compassCalOffset[1], m_compassCalOffset[2]); }
+    
 protected:
     void gyroBiasInit();                                    // sets up gyro bias calculation
     void handleGyroBias();                                  // adjust gyro for bias
@@ -174,7 +180,8 @@ protected:
     bool m_accelCalibrationMode;                            // true if cal mode so don't use cal data!
 
     RTIMU_DATA m_imuData;                                   // the data from the IMU
-
+    //RTIMU_DATA m_rawImuData;                                // raw imu data
+    
     RTIMUSettings *m_settings;                              // the settings object pointer
 
     RTFusion *m_fusion;                                     // the fusion algorithm
@@ -182,6 +189,9 @@ protected:
 
     float m_compassCalOffset[3];
     float m_compassCalScale[3];
+
+    RTVector3 m_compassCalVariableOffset;
+    
     RTVector3 m_compassAverage;                             // a running average to smooth the mag outputs
 
     bool m_runtimeMagCalValid;                              // true if the runtime mag calibration has valid data
